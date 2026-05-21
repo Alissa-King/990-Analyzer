@@ -11,35 +11,19 @@
       revenue trends, and more.
     </p>
 
-    <!-- EIN lookup -->
-    <form action="/search" method="get" class="mb-3">
-      <div class="input-group input-group-lg shadow-sm">
-        <span class="input-group-text bg-white">EIN</span>
-        <input
-          type="text"
-          name="ein"
-          class="form-control"
-          placeholder="12-3456789"
-          pattern="[\d\-]{9,10}"
-          title="Enter a 9-digit EIN, with or without hyphen"
-        />
-        <button class="btn btn-primary px-4" type="submit">Analyze</button>
-      </div>
-    </form>
-
-    <div class="text-muted small mb-4">— or —</div>
-
-    <!-- Name search -->
+    <!-- Unified search -->
     <form action="/search" method="get">
       <div class="input-group input-group-lg shadow-sm">
         <input
           type="text"
           name="q"
           class="form-control"
-          placeholder="Search by organization name…"
+          placeholder="Organization name or EIN (e.g. 53-0196605)"
+          autofocus
         />
-        <button class="btn btn-outline-primary px-4" type="submit">Search</button>
+        <button class="btn btn-primary px-4" type="submit">Search</button>
       </div>
+      <div class="text-muted small mt-2">Enter a name to search, or paste an EIN to go straight to the report.</div>
     </form>
 
     <p class="text-muted small mt-4">

@@ -12,16 +12,19 @@ def index():
     return render_template("index.html")
 
 
+_EIN_RE = __import__("re").compile(r"^\d{2}-?\d{7}$")
+
+
 @app.route("/search")
 def search():
     query = request.args.get("q", "").strip()
-    ein = request.args.get("ein", "").strip()
-
-    if ein:
-        return redirect(url_for("org_detail", ein=ein.replace("-", "")))
 
     if not query:
         return redirect(url_for("index"))
+
+    # Auto-detect EIN: 9 digits optionally formatted as XX-XXXXXXX
+    if _EIN_RE.match(query):
+        return redirect(url_for("org_detail", ein=query.replace("-", "")))
 
     try:
         results = search_orgs(query)
