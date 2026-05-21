@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Search: {{ query }}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4 gap-3">
+  <a href="/" class="btn btn-sm btn-outline-secondary">&larr; Back</a>
+  <h4 class="mb-0">Results for "{{ query }}"</h4>
+</div>
+
+{% if results %}
+<div class="list-group shadow-sm">
+  {% for org in results %}
+  <a href="/org/{{ org.ein }}" class="list-group-item list-group-item-action">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <div class="fw-semibold">{{ org.name }}</div>
+        <small class="text-muted">
+          EIN {{ org.ein }} &nbsp;|&nbsp;
+          {{ org.city }}, {{ org.state }}
+          {% if org.ntee_code %}&nbsp;|&nbsp; NTEE {{ org.ntee_code }}{% endif %}
+        </small>
+      </div>
+      <span class="badge bg-light text-secondary border ms-3">View &rarr;</span>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-warning">No organizations found for "{{ query }}".</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,6 @@
+body { background: #f8f9fa; }
+.navbar { box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+.card { border-radius: 0.75rem; }
+.list-group-item:hover { background: #f0f4ff; }
+.text-orange { color: #fd7e14 !important; }
+.bg-orange { background-color: #fd7e14 !important; }

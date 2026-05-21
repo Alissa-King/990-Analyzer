@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}990 Agency Health Analyzer{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-lg-7 text-center">
+    <h1 class="display-5 fw-bold mb-2">Nonprofit 990 Health Analyzer</h1>
+    <p class="text-muted mb-5">
+      Enter an EIN or search by name to pull IRS 990 filings and get an
+      instant financial health report — program efficiency, reserves,
+      revenue trends, and more.
+    </p>
+
+    <!-- EIN lookup -->
+    <form action="/search" method="get" class="mb-3">
+      <div class="input-group input-group-lg shadow-sm">
+        <span class="input-group-text bg-white">EIN</span>
+        <input
+          type="text"
+          name="ein"
+          class="form-control"
+          placeholder="12-3456789"
+          pattern="[\d\-]{9,10}"
+          title="Enter a 9-digit EIN, with or without hyphen"
+        />
+        <button class="btn btn-primary px-4" type="submit">Analyze</button>
+      </div>
+    </form>
+
+    <div class="text-muted small mb-4">— or —</div>
+
+    <!-- Name search -->
+    <form action="/search" method="get">
+      <div class="input-group input-group-lg shadow-sm">
+        <input
+          type="text"
+          name="q"
+          class="form-control"
+          placeholder="Search by organization name…"
+        />
+        <button class="btn btn-outline-primary px-4" type="submit">Search</button>
+      </div>
+    </form>
+
+    <p class="text-muted small mt-4">
+      Data sourced from the
+      <a href="https://projects.propublica.org/nonprofits/" target="_blank" rel="noopener">
+        ProPublica Nonprofit Explorer
+      </a>
+      (IRS e-file data). &nbsp;|&nbsp;
+      <a href="/demo">View demo report</a>
+    </p>
+  </div>
+</div>
+
+<!-- Example EINs -->
+<div class="row justify-content-center mt-5">
+  <div class="col-lg-7">
+    <h6 class="text-muted text-uppercase small fw-semibold mb-3">Try a live example</h6>
+    <div class="d-flex flex-wrap gap-2">
+      {% for label, ein in [
+          ("American Red Cross", "530196605"),
+          ("Feeding America", "363673599"),
+          ("Habitat for Humanity", "912150070"),
+          ("United Way Worldwide", "131635294"),
+      ] %}
+      <a href="/org/{{ ein }}" class="btn btn-sm btn-outline-secondary">{{ label }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

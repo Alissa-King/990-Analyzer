@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% block title %}{{ org.name }} — 990 Health{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="d-flex align-items-start gap-3 mb-4">
+  <a href="/" class="btn btn-sm btn-outline-secondary mt-1">&larr; Back</a>
+  <div>
+    <h2 class="mb-0 fw-bold">{{ org.name }}</h2>
+    <small class="text-muted">
+      EIN {{ org.ein }}
+      {% if org.city %}&nbsp;|&nbsp; {{ org.city }}, {{ org.state }}{% endif %}
+      {% if org.ntee_code %}&nbsp;|&nbsp; NTEE {{ org.ntee_code }}{% endif %}
+    </small>
+  </div>
+</div>
+
+{% if not metrics %}
+<div class="alert alert-warning">No structured 990 data found for this organization.</div>
+{% else %}
+
+<!-- Health Score Card -->
+<div class="row g-4 mb-4">
+  <div class="col-md-4">
+    <div class="card h-100 text-center border-0 shadow-sm">
+      <div class="card-body py-4">
+        <div class="display-1 fw-bold text-{{ color }}">{{ letter }}</div>
+        <div class="fs-4 fw-semibold">Health Score</div>
+        <div class="display-6 fw-bold">{{ score }}<span class="fs-5 text-muted">/100</span></div>
+        <div class="progress mt-3" style="height:10px">
+          <div class="progress-bar bg-{{ color }}" style="width:{{ score }}%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Score breakdown -->
+  <div class="col-md-8">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-header bg-white fw-semibold">Score Breakdown (most recent year)</div>
+      <div class="card-body">
+        <table class="table table-sm mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Category</th>
+              <th class="text-end">Points</th>
+              <th class="text-end">Max</th>
+              <th>Note</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for label, pts, max_pts, note in breakdown %}
+            <tr>
+              <td>{{ label }}</td>
+              <td class="text-end fw-semibold">{{ pts }}</td>
+              <td class="text-end text-muted">{{ max_pts }}</td>
+              <td class="text-muted small">{{ note }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- KPI tiles (latest year) -->
+{% if latest %}
+<div class="row g-3 mb-4">
+  {% macro kpi(label, value, suffix="", prefix="$", cls="") %}
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm h-100 {{ cls }}">
+      <div class="card-body py-3">
+        <div class="text-muted small text-uppercase fw-semibold">{{ label }}</div>
+        <div class="fs-4 fw-bold">
+          {% if value is not none %}{{ prefix }}{{ "{:,.0f}".format(value) }}{{ suffix }}
+          {% else %}<span class="text-muted">N/A</span>{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endmacro %}
+
+  {{ kpi("Total Revenue", latest.total_revenue) }}
+  {{ kpi("Total Expenses", latest.total_expenses) }}
+  {{ kpi("Net Assets", latest.net_assets) }}
+  {{ kpi("Net Surplus", latest.net_surplus) }}
+  {{ kpi("Program Exp. Ratio", latest.program_expense_ratio, suffix="%", prefix="") }}
+  {{ kpi("Surplus Margin", latest.surplus_margin, suffix="%", prefix="") }}
+  {{ kpi("Months of Reserves", latest.months_of_reserves, suffix=" mo", prefix="") }}
+  {{ kpi("Liabilities / Assets", latest.liabilities_to_assets, suffix="%", prefix="") }}
+</div>
+{% endif %}
+
+<!-- Charts -->
+<div class="row g-4 mb-4">
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white fw-semibold">Revenue vs Expenses</div>
+      <div class="card-body"><canvas id="revExpChart" height="220"></canvas></div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white fw-semibold">Net Assets Over Time</div>
+      <div class="card-body"><canvas id="netAssetsChart" height="220"></canvas></div>
+    </div>
+  </div>
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white fw-semibold">Expense Breakdown by Year</div>
+      <div class="card-body"><canvas id="expBreakdownChart" height="160"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- Year-by-year table -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-white fw-semibold">Year-by-Year Data</div>
+  <div class="table-responsive">
+    <table class="table table-hover table-sm mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Year</th>
+          <th class="text-end">Revenue</th>
+          <th class="text-end">Expenses</th>
+          <th class="text-end">Net Surplus</th>
+          <th class="text-end">Net Assets</th>
+          <th class="text-end">Prog. Exp %</th>
+          <th class="text-end">Reserves (mo)</th>
+          <th class="text-end">Surplus Margin</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in metrics | reverse %}
+        <tr>
+          <td class="fw-semibold">{{ m.year }}</td>
+          <td class="text-end">${{ "{:,.0f}".format(m.total_revenue) }}</td>
+          <td class="text-end">${{ "{:,.0f}".format(m.total_expenses) }}</td>
+          <td class="text-end {% if m.net_surplus >= 0 %}text-success{% else %}text-danger{% endif %}">
+            ${{ "{:,.0f}".format(m.net_surplus) }}
+          </td>
+          <td class="text-end">${{ "{:,.0f}".format(m.net_assets) }}</td>
+          <td class="text-end">
+            {% if m.program_expense_ratio is not none %}{{ m.program_expense_ratio }}%{% else %}—{% endif %}
+          </td>
+          <td class="text-end">
+            {% if m.months_of_reserves is not none %}{{ m.months_of_reserves }}{% else %}—{% endif %}
+          </td>
+          <td class="text-end {% if m.surplus_margin and m.surplus_margin >= 0 %}text-success{% elif m.surplus_margin %}text-danger{% endif %}">
+            {% if m.surplus_margin is not none %}{{ m.surplus_margin }}%{% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endif %} {# end if metrics #}
+{% endblock %}
+
+{% block scripts %}
+<script>
+const YEARS = {{ years | tojson }};
+const REVENUES = {{ revenues | tojson }};
+const EXPENSES = {{ expenses | tojson }};
+const NET_ASSETS = {{ net_assets | tojson }};
+const PROG_EXP = {{ prog_exp | tojson }};
+const MGMT_EXP = {{ mgmt_exp | tojson }};
+const FUND_EXP = {{ fund_exp | tojson }};
+
+const fmt = v => v == null ? null : '$' + v.toLocaleString();
+
+// Revenue vs Expenses
+new Chart(document.getElementById('revExpChart'), {
+  type: 'bar',
+  data: {
+    labels: YEARS,
+    datasets: [
+      { label: 'Revenue', data: REVENUES, backgroundColor: '#0d6efd99', borderColor: '#0d6efd', borderWidth: 1 },
+      { label: 'Expenses', data: EXPENSES, backgroundColor: '#dc354599', borderColor: '#dc3545', borderWidth: 1 },
+    ]
+  },
+  options: {
+    plugins: { tooltip: { callbacks: { label: ctx => fmt(ctx.raw) } } },
+    scales: { y: { ticks: { callback: v => '$' + (v/1e6).toFixed(1) + 'M' } } }
+  }
+});
+
+// Net Assets
+new Chart(document.getElementById('netAssetsChart'), {
+  type: 'line',
+  data: {
+    labels: YEARS,
+    datasets: [{
+      label: 'Net Assets',
+      data: NET_ASSETS,
+      borderColor: '#198754',
+      backgroundColor: '#19875422',
+      fill: true,
+      tension: 0.3,
+    }]
+  },
+  options: {
+    plugins: { tooltip: { callbacks: { label: ctx => fmt(ctx.raw) } } },
+    scales: { y: { ticks: { callback: v => '$' + (v/1e6).toFixed(1) + 'M' } } }
+  }
+});
+
+// Expense breakdown stacked bar
+new Chart(document.getElementById('expBreakdownChart'), {
+  type: 'bar',
+  data: {
+    labels: YEARS,
+    datasets: [
+      { label: 'Program', data: PROG_EXP, backgroundColor: '#0d6efd' },
+      { label: 'Management', data: MGMT_EXP, backgroundColor: '#ffc107' },
+      { label: 'Fundraising', data: FUND_EXP, backgroundColor: '#dc3545' },
+    ]
+  },
+  options: {
+    plugins: { tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + fmt(ctx.raw) } } },
+    scales: {
+      x: { stacked: true },
+      y: { stacked: true, ticks: { callback: v => '$' + (v/1e6).toFixed(1) + 'M' } }
+    }
+  }
+});
+</script>
+{% endblock %}
