@@ -1,10 +1,11 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for, flash
 import requests
 from analyzer import fetch_org, search_orgs, compute_metrics, health_score, grade
 from sample_data import SAMPLE_ORG, SAMPLE_FILINGS
 
 app = Flask(__name__)
-app.secret_key = "990-analyzer-secret"
+app.secret_key = os.environ.get("SECRET_KEY", "990-analyzer-secret")
 
 
 @app.route("/")
