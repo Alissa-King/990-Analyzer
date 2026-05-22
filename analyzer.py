@@ -210,6 +210,147 @@ def health_score(metrics_rows):
     return min(100, total), breakdown
 
 
+def key_signals(metrics):
+    """
+    Return a list of (level, message) for the most important findings.
+    level is 'good', 'ok', or 'bad'.
+    """
+    if not metrics:
+        return []
+
+    latest = metrics[-1]
+    signals = []
+
+    per = latest["program_expense_ratio"]
+    if per is not None:
+        if per >= 80:
+            signals.append(("good", f"{per}% of spending goes directly to programs — well above the 75% standard"))
+        elif per >= 75:
+            signals.append(("good", f"{per}% program expense ratio meets the 75% benchmark set by charity watchdogs"))
+        elif per >= 60:
+            signals.append(("ok", f"{per}% goes to programs — slightly below the 75% target, but not alarming"))
+        else:
+            signals.append(("bad", f"Only {per}% of spending reaches programs — overhead is high for a nonprofit"))
+
+    mor = latest["months_of_reserves"]
+    if mor is not None:
+        if mor >= 6:
+            signals.append(("good", f"{mor} months of operating reserves — strong cushion if funding is disrupted"))
+        elif mor >= 3:
+            signals.append(("ok", f"{mor} months of operating reserves — within the recommended 3–6 month range"))
+        elif mor >= 1:
+            signals.append(("bad", f"Only {mor} months of reserves — below the 3-month minimum most experts recommend"))
+        else:
+            signals.append(("bad", "Less than 1 month of operating reserves — very limited financial runway"))
+
+    sm = latest["surplus_margin"]
+    if sm is not None:
+        if sm >= 5:
+            signals.append(("good", f"Ended the year with a {sm}% surplus — actively building financial strength"))
+        elif sm >= 0:
+            signals.append(("ok", f"Near break-even ({sm}% surplus margin) — revenue covered expenses"))
+        elif sm >= -5:
+            signals.append(("ok", f"Spent {abs(sm):.1f}% more than it raised — small deficit worth monitoring"))
+        else:
+            signals.append(("bad", f"Spent {abs(sm):.1f}% more than it raised — a deficit this size is hard to sustain"))
+
+    if len(metrics) >= 2:
+        rev_list = [m["total_revenue"] for m in metrics if m["total_revenue"]]
+        if len(rev_list) >= 2 and rev_list[-2]:
+            trend = (rev_list[-1] - rev_list[-2]) / rev_list[-2] * 100
+            if trend >= 10:
+                signals.append(("good", f"Revenue grew {trend:.1f}% last year — strong upward momentum"))
+            elif trend >= 3:
+                signals.append(("good", f"Revenue grew {trend:.1f}% last year"))
+            elif trend >= -3:
+                signals.append(("ok", f"Revenue was roughly flat last year ({trend:+.1f}%)"))
+            elif trend >= -10:
+                signals.append(("bad", f"Revenue declined {abs(trend):.1f}% last year — worth investigating"))
+            else:
+                signals.append(("bad", f"Revenue dropped {abs(trend):.1f}% last year — a significant decline"))
+
+    lta = latest["liabilities_to_assets"]
+    if lta is not None and lta > 50:
+        if lta > 80:
+            signals.append(("bad", f"Liabilities are {lta}% of total assets — the organization carries a heavy debt load"))
+        else:
+            signals.append(("ok", f"Liabilities are {lta}% of assets — moderate but manageable debt level"))
+
+    return signals
+
+
+def generate_summary(org_name, metrics, score):
+    """Return a 2–4 sentence plain-language health summary."""
+    if not metrics or score is None:
+        return None
+
+    latest = metrics[-1]
+    year = latest["year"]
+    parts = []
+
+    if score >= 85:
+        parts.append(f"Based on {year} IRS filings, {org_name} is in excellent financial health.")
+    elif score >= 70:
+        parts.append(f"Based on {year} IRS filings, {org_name} is in good financial health.")
+    elif score >= 55:
+        parts.append(f"Based on {year} IRS filings, {org_name} shows adequate financial health with some areas to watch.")
+    elif score >= 40:
+        parts.append(f"Based on {year} IRS filings, {org_name} shows concerning financial indicators.")
+    else:
+        parts.append(f"Based on {year} IRS filings, {org_name} shows signs of significant financial stress.")
+
+    per = latest["program_expense_ratio"]
+    if per is not None:
+        if per >= 80:
+            parts.append(
+                f"An impressive {per}% of total spending goes directly to programs and services — "
+                f"well above the 75% standard that charity watchdogs like Charity Navigator use."
+            )
+        elif per >= 75:
+            parts.append(
+                f"{per}% of spending goes to programs, meeting the 75% standard used by charity watchdogs."
+            )
+        elif per >= 60:
+            parts.append(
+                f"{per}% of spending goes to programs, which is below the 75% standard "
+                f"but not unusual for organizations with high administrative complexity."
+            )
+        else:
+            parts.append(
+                f"Only {per}% of spending reaches programs; the remaining {100 - per}% covers administration "
+                f"and fundraising, which is higher than what most charity watchdogs recommend."
+            )
+
+    mor = latest["months_of_reserves"]
+    if mor is not None:
+        if mor >= 12:
+            parts.append(
+                f"The organization holds {mor} months of operating reserves — an exceptionally strong "
+                f"financial cushion that provides stability through disruptions."
+            )
+        elif mor >= 6:
+            parts.append(
+                f"With {mor} months of operating reserves, the organization has a solid financial "
+                f"cushion well within the healthy 3–6 month range."
+            )
+        elif mor >= 3:
+            parts.append(
+                f"The organization holds {mor} months of operating reserves, within the recommended 3–6 month range."
+            )
+        elif mor >= 1:
+            parts.append(
+                f"Operating reserves of only {mor} months are below the recommended 3-month minimum, "
+                f"meaning the organization has limited runway if revenue were to drop unexpectedly."
+            )
+        else:
+            parts.append(
+                f"The organization has less than one month of operating reserves, "
+                f"which is a significant financial vulnerability."
+            )
+
+    return " ".join(parts)
+
+
 def grade(score):
     if score is None:
         return "N/A", "secondary"

@@ -3,7 +3,7 @@ import re
 import logging
 from flask import Flask, render_template, request, redirect, url_for, flash
 import requests
-from analyzer import fetch_org, search_orgs, compute_metrics, health_score, grade
+from analyzer import fetch_org, search_orgs, compute_metrics, health_score, grade, key_signals, generate_summary
 
 _COLOR_HEX = {
     "success":   "#059669",
@@ -87,6 +87,8 @@ def _render_org(org, filings):
     score, breakdown = health_score(metrics)
     letter, color = grade(score)
     color_hex = _COLOR_HEX.get(color, "#6b7280")
+    signals = key_signals(metrics)
+    summary = generate_summary(org.get("name", "This organization"), metrics, score)
 
     years = [m["year"] for m in metrics]
     revenues = [m["total_revenue"] for m in metrics]
@@ -105,6 +107,8 @@ def _render_org(org, filings):
         color=color,
         color_hex=color_hex,
         breakdown=breakdown,
+        signals=signals,
+        summary=summary,
         years=years,
         revenues=revenues,
         expenses=expenses,

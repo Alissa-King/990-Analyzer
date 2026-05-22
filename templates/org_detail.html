@@ -43,7 +43,41 @@
 </div>
 {% else %}
 
+<!-- Summary & signals -->
+{% if summary or signals %}
+<div class="summary-card mb-4">
+  {% if summary %}
+  <div class="summary-body">
+    <div class="summary-icon">💡</div>
+    <div>
+      <div class="summary-heading">Plain-Language Summary</div>
+      <p class="summary-text">{{ summary }}</p>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if signals %}
+  <div class="signals-list {% if summary %}signals-list--bordered{% endif %}">
+    <div class="signals-heading">Key Signals</div>
+    {% for level, msg in signals %}
+    <div class="signal-item signal-{{ level }}">
+      <span class="signal-dot"></span>
+      {{ msg }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
 <!-- Score breakdown -->
+{% set breakdown_descs = {
+  "Program Expense Ratio": "What share of total spending actually reaches programs and services (not admin or fundraising).",
+  "Operating Reserves":    "How many months the org could keep running if all donations stopped tomorrow.",
+  "Surplus Margin":        "Whether the org is bringing in more than it spends — a positive margin builds resilience.",
+  "Revenue Trend":         "Whether the organization's income is growing, flat, or shrinking year over year.",
+  "Liability Ratio":       "How much of what the org owns is funded by debt vs. its own resources."
+} %}
 <div class="section-card mb-4">
   <div class="section-card-header">Score Breakdown <span class="text-muted fw-normal">(most recent year)</span></div>
   <div class="section-card-body">
@@ -63,6 +97,9 @@
             <div class="breakdown-bar-fill" style="width:{{ pct }}%; background:{{ bar_color }}"></div>
           </div>
           <div class="breakdown-note">{{ note }}</div>
+          {% if label in breakdown_descs %}
+          <div class="breakdown-desc">{{ breakdown_descs[label] }}</div>
+          {% endif %}
         </div>
       </div>
       {% endfor %}
@@ -72,7 +109,7 @@
 
 <!-- KPI tiles -->
 {% if latest %}
-{% macro kpi(label, val, prefix="$", suffix="", good_if="positive") %}
+{% macro kpi(label, val, desc, prefix="$", suffix="", good_if="positive") %}
 {% if val is not none %}
   {% if good_if == "positive" %}{% set klass = "good" if val >= 0 else "bad" %}
   {% elif good_if == "high" %}{% set klass = "good" if val >= 75 else ("ok" if val >= 50 else "bad") %}
@@ -86,19 +123,20 @@
     <div class="kpi-value">
       {% if val is not none %}{{ prefix }}{{ "{:,.0f}".format(val) }}{{ suffix }}{% else %}—{% endif %}
     </div>
+    <div class="kpi-desc">{{ desc }}</div>
   </div>
 </div>
 {% endmacro %}
 
 <div class="row g-3 mb-4">
-  {{ kpi("Total Revenue",        latest.total_revenue,          good_if="neutral") }}
-  {{ kpi("Total Expenses",       latest.total_expenses,         good_if="neutral") }}
-  {{ kpi("Net Assets",           latest.net_assets,             good_if="positive") }}
-  {{ kpi("Net Surplus",          latest.net_surplus,            good_if="positive") }}
-  {{ kpi("Program Exp. Ratio",   latest.program_expense_ratio,  prefix="", suffix="%", good_if="high") }}
-  {{ kpi("Surplus Margin",       latest.surplus_margin,         prefix="", suffix="%", good_if="positive") }}
-  {{ kpi("Months of Reserves",   latest.months_of_reserves,     prefix="", suffix=" mo", good_if="reserves") }}
-  {{ kpi("Liabilities / Assets", latest.liabilities_to_assets,  prefix="", suffix="%", good_if="low") }}
+  {{ kpi("Total Revenue",        latest.total_revenue,         "All income: donations, grants, services",             good_if="neutral") }}
+  {{ kpi("Total Expenses",       latest.total_expenses,        "All money spent running the organization",            good_if="neutral") }}
+  {{ kpi("Net Assets",           latest.net_assets,            "What it owns minus what it owes (like net worth)",    good_if="positive") }}
+  {{ kpi("Net Surplus",          latest.net_surplus,           "Revenue minus expenses — positive means growing",     good_if="positive") }}
+  {{ kpi("Program Exp. Ratio",   latest.program_expense_ratio, "% of spending that reaches the mission — 75%+ is healthy", prefix="", suffix="%", good_if="high") }}
+  {{ kpi("Surplus Margin",       latest.surplus_margin,        "% difference between income and spending",            prefix="", suffix="%", good_if="positive") }}
+  {{ kpi("Months of Reserves",   latest.months_of_reserves,    "How long it could operate if all funding stopped — 3–6 mo is healthy", prefix="", suffix=" mo", good_if="reserves") }}
+  {{ kpi("Liabilities / Assets", latest.liabilities_to_assets, "% of assets that are borrowed — lower is better",    prefix="", suffix="%", good_if="low") }}
 </div>
 {% endif %}
 

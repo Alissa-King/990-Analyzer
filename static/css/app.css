@@ -308,6 +308,85 @@ body {
 .val-good { color: #059669; font-weight: 600; }
 .val-bad  { color: #dc2626; font-weight: 600; }
 
+/* ── Summary & signals ───────────────────────────────────── */
+.summary-card {
+  background: white;
+  border-radius: 0.875rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+  overflow: hidden;
+}
+.summary-body {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1.25rem 1.5rem;
+}
+.summary-icon { font-size: 1.5rem; line-height: 1; flex-shrink: 0; margin-top: 0.1rem; }
+.summary-heading {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+}
+.summary-text {
+  font-size: 0.925rem;
+  line-height: 1.65;
+  color: var(--text);
+  margin: 0;
+}
+
+.signals-list {
+  padding: 1rem 1.5rem 1.25rem;
+}
+.signals-list--bordered {
+  border-top: 1px solid #f1f5f9;
+}
+.signals-heading {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+  margin-bottom: 0.6rem;
+}
+.signal-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  padding: 0.3rem 0;
+  color: var(--text);
+}
+.signal-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 0.35rem;
+}
+.signal-good .signal-dot { background: #059669; }
+.signal-ok   .signal-dot { background: #d97706; }
+.signal-bad  .signal-dot { background: #dc2626; }
+
+/* ── KPI desc ────────────────────────────────────────────── */
+.kpi-desc {
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 0.3rem;
+  line-height: 1.4;
+}
+
+/* ── Breakdown desc ──────────────────────────────────────── */
+.breakdown-desc {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-top: 0.2rem;
+  line-height: 1.4;
+}
+
 /* ── Search results ──────────────────────────────────────── */
 .list-group-item {
   border-color: var(--border);
