@@ -1,4 +1,6 @@
 import os
+import re
+import logging
 from flask import Flask, render_template, request, redirect, url_for, flash
 import requests
 from analyzer import fetch_org, search_orgs, compute_metrics, health_score, grade
@@ -13,7 +15,7 @@ def index():
     return render_template("index.html")
 
 
-_EIN_RE = __import__("re").compile(r"^\d{2}-?\d{7}$")
+_EIN_RE = re.compile(r"^\d{2}-?\d{7}$")
 
 
 @app.route("/search")
@@ -32,6 +34,10 @@ def search():
     except requests.RequestException as e:
         flash(f"Search failed: {e}", "danger")
         results = []
+    except Exception as e:
+        logging.exception("Unexpected error in search")
+        flash("An unexpected error occurred. Please try again.", "danger")
+        results = []
 
     return render_template("search_results.html", query=query, results=results)
 
@@ -48,6 +54,10 @@ def org_detail(ein):
         return redirect(url_for("index"))
     except requests.RequestException as e:
         flash(f"Network error: {e}", "danger")
+        return redirect(url_for("index"))
+    except Exception as e:
+        logging.exception("Unexpected error fetching org %s", ein)
+        flash("An unexpected error occurred. Please try again.", "danger")
         return redirect(url_for("index"))
 
     if not org:

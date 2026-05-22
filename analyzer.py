@@ -24,7 +24,11 @@ def _get(url, params=None):
 def search_orgs(query):
     """Search nonprofits by name. Returns list of org summaries."""
     data = _get(f"{PROPUBLICA_BASE}/search.json", params={"q": query})
-    return data.get("organizations", [])
+    orgs = data.get("organizations", [])
+    # ProPublica returns ein as an integer; normalize to zero-padded string.
+    for org in orgs:
+        org["ein"] = str(org.get("ein", "") or "").zfill(9)
+    return orgs
 
 
 def fetch_org(ein):
