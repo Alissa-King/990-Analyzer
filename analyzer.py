@@ -72,8 +72,12 @@ def compute_metrics(filings):
         net_assets = assets - liabilities
 
         prog_exp = f.get("prgmservexpns") or 0
-        mgmt_exp = f.get("totmngmntservcs") or 0
-        fundraise_exp = f.get("totfunrndng") or 0
+        # ProPublica uses inconsistent field names across filing years; try both.
+        fundraise_exp = f.get("totfunrndng") or f.get("fundfees") or 0
+        mgmt_exp = f.get("totmngmntservcs") or f.get("mngmntservcs") or 0
+        # If the API returned no breakdown but we have a total, infer the rest.
+        if not mgmt_exp and exp > (prog_exp + fundraise_exp):
+            mgmt_exp = max(0, exp - prog_exp - fundraise_exp)
         contribs = f.get("totcntrbgfts") or 0
         officer_comp = f.get("compofcers") or 0
 

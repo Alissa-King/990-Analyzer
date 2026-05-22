@@ -2,73 +2,67 @@
 {% block title %}Search: {{ query }}{% endblock %}
 
 {% block content %}
-<!-- Search bar at top so users can refine without going back -->
-<div class="row justify-content-center mb-4">
-  <div class="col-lg-8">
-    <form action="/search" method="get">
-      <div class="input-group shadow-sm">
-        <input
-          type="text"
-          name="q"
-          class="form-control"
-          value="{{ query }}"
-          placeholder="Organization name or EIN"
-        />
-        <button class="btn btn-primary px-4" type="submit">Search</button>
-        <a href="/" class="btn btn-outline-secondary">Clear</a>
-      </div>
-    </form>
-  </div>
-</div>
-
-{% if results %}
 <div class="row justify-content-center">
   <div class="col-lg-8">
-    <p class="text-muted small mb-2">
-      {{ results | length }} result{{ 's' if results | length != 1 }} for
+
+    <!-- Inline search bar -->
+    <form action="/search" method="get" class="mb-4">
+      <div class="search-wrap" style="border:1px solid var(--border); box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd"/>
+        </svg>
+        <input type="text" name="q" class="search-input" value="{{ query }}"
+               placeholder="Organization name or EIN" />
+        <button class="search-btn" type="submit">Search</button>
+      </div>
+    </form>
+
+    {% if results %}
+    <p class="text-muted small mb-3">
+      <strong>{{ results | length }}</strong> result{{ 's' if results | length != 1 }} for
       "<strong>{{ query }}</strong>"
     </p>
-    <div class="list-group shadow-sm">
+    <div class="section-card">
       {% for org in results %}
-      <a href="/org/{{ org.ein }}" class="list-group-item list-group-item-action py-3">
-        <div class="d-flex justify-content-between align-items-start">
-          <div>
-            <div class="fw-semibold">{{ org.name }}</div>
-            <div class="text-muted small mt-1">
-              <span class="me-3">EIN {{ org.ein[:2] }}-{{ org.ein[2:] }}</span>
-              {% if org.city and org.state %}
-              <span class="me-3">{{ org.city }}, {{ org.state }}</span>
-              {% endif %}
-              {% if org.ntee_code %}
-              <span class="me-3">NTEE {{ org.ntee_code }}</span>
-              {% endif %}
-              {% if org.subsection_code == "3" %}
-              <span class="badge bg-success-subtle text-success border border-success-subtle">501(c)(3)</span>
-              {% elif org.subsection_code %}
-              <span class="badge bg-secondary-subtle text-secondary border">501(c)({{ org.subsection_code }})</span>
-              {% endif %}
-            </div>
+      <a href="/org/{{ org.ein }}" class="d-flex align-items-center justify-content-between
+         px-4 py-3 text-decoration-none border-bottom" style="border-color:#f1f5f9!important;
+         transition:background 0.12s; color:inherit;"
+         onmouseover="this.style.background='#f8faff'" onmouseout="this.style.background=''">
+        <div>
+          <div class="fw-semibold" style="font-size:0.95rem">{{ org.name }}</div>
+          <div class="mt-1 d-flex flex-wrap gap-2 align-items-center">
+            <span class="text-muted" style="font-size:0.8rem">EIN {{ org.ein[:2] }}-{{ org.ein[2:] }}</span>
+            {% if org.city and org.state %}
+            <span class="text-muted" style="font-size:0.8rem">&bull; {{ org.city }}, {{ org.state }}</span>
+            {% endif %}
+            {% if org.ntee_code %}
+            <span class="text-muted" style="font-size:0.8rem">&bull; NTEE {{ org.ntee_code }}</span>
+            {% endif %}
+            {% if org.subsection_code == "3" %}
+            <span style="font-size:0.72rem;font-weight:600;padding:0.15rem 0.5rem;
+              background:#d1fae5;color:#065f46;border-radius:999px;">501(c)(3)</span>
+            {% elif org.subsection_code %}
+            <span style="font-size:0.72rem;font-weight:600;padding:0.15rem 0.5rem;
+              background:#f1f5f9;color:#475569;border-radius:999px;">501(c)({{ org.subsection_code }})</span>
+            {% endif %}
           </div>
-          <span class="btn btn-sm btn-outline-primary ms-3 flex-shrink-0">Analyze &rarr;</span>
         </div>
+        <div style="color:#4f46e5;font-size:1.1rem;margin-left:1rem;">&#8594;</div>
       </a>
       {% endfor %}
     </div>
-
     {% if results | length == 100 %}
-    <p class="text-muted small mt-2">Showing first 100 results — try a more specific name.</p>
+    <p class="text-muted small mt-2 text-center">Showing first 100 — try a more specific name.</p>
     {% endif %}
-  </div>
-</div>
 
-{% else %}
-<div class="row justify-content-center">
-  <div class="col-lg-8">
-    <div class="alert alert-warning">
-      No organizations found for "<strong>{{ query }}</strong>".
-      Try a shorter name, check spelling, or enter an EIN directly.
+    {% else %}
+    <div class="section-card section-card-body text-center py-5">
+      <div style="font-size:2.5rem;margin-bottom:0.75rem;">🔍</div>
+      <div class="fw-semibold mb-1">No results for "{{ query }}"</div>
+      <div class="text-muted small">Try a shorter name, check spelling, or enter an EIN directly.</div>
     </div>
+    {% endif %}
+
   </div>
 </div>
-{% endif %}
 {% endblock %}
