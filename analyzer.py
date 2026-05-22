@@ -36,6 +36,9 @@ def fetch_org(ein):
     clean = ein.replace("-", "").strip()
     data = _get(f"{PROPUBLICA_BASE}/organizations/{clean}.json")
     org = data.get("organization", {})
+    # ProPublica returns ein as an integer; normalize to zero-padded string.
+    if "ein" in org:
+        org["ein"] = str(org["ein"] or "").zfill(9)
     filings = data.get("filings_with_data", [])
     return org, sorted(filings, key=lambda f: f.get("tax_prd_yr", 0))
 
