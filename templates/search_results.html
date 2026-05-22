@@ -1,68 +1,59 @@
 {% extends "base.html" %}
-{% block title %}Search: {{ query }}{% endblock %}
+{% block title %}{{ query }} — 990 Health{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-lg-8">
+<div class="results-wrap">
 
-    <!-- Inline search bar -->
-    <form action="/search" method="get" class="mb-4">
-      <div class="search-wrap" style="border:1px solid var(--border); box-shadow:0 2px 8px rgba(0,0,0,0.06);">
-        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd"/>
-        </svg>
-        <input type="text" name="q" class="search-input" value="{{ query }}"
-               placeholder="Organization name or EIN" />
-        <button class="search-btn" type="submit">Search</button>
-      </div>
-    </form>
+  <form action="/search" method="get" style="margin-bottom:1.5rem">
+    <div class="search-box">
+      <svg class="search-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd"/>
+      </svg>
+      <input type="text" name="q" class="search-input" value="{{ query }}" placeholder="Org name or EIN" />
+      <button class="search-btn" type="submit">Search</button>
+    </div>
+  </form>
 
-    {% if results %}
-    <p class="text-muted small mb-3">
-      <strong>{{ results | length }}</strong> result{{ 's' if results | length != 1 }} for
-      "<strong>{{ query }}</strong>"
-    </p>
-    <div class="section-card">
-      {% for org in results %}
-      <a href="/org/{{ org.ein }}" class="d-flex align-items-center justify-content-between
-         px-4 py-3 text-decoration-none border-bottom" style="border-color:#f1f5f9!important;
-         transition:background 0.12s; color:inherit;"
-         onmouseover="this.style.background='#f8faff'" onmouseout="this.style.background=''">
-        <div>
-          <div class="fw-semibold" style="font-size:0.95rem">{{ org.name }}</div>
-          <div class="mt-1 d-flex flex-wrap gap-2 align-items-center">
-            <span class="text-muted" style="font-size:0.8rem">EIN {{ org.ein[:2] }}-{{ org.ein[2:] }}</span>
-            {% if org.city and org.state %}
-            <span class="text-muted" style="font-size:0.8rem">&bull; {{ org.city }}, {{ org.state }}</span>
-            {% endif %}
-            {% if org.ntee_code %}
-            <span class="text-muted" style="font-size:0.8rem">&bull; NTEE {{ org.ntee_code }}</span>
-            {% endif %}
-            {% if org.subsection_code == "3" %}
-            <span style="font-size:0.72rem;font-weight:600;padding:0.15rem 0.5rem;
-              background:#d1fae5;color:#065f46;border-radius:999px;">501(c)(3)</span>
-            {% elif org.subsection_code %}
-            <span style="font-size:0.72rem;font-weight:600;padding:0.15rem 0.5rem;
-              background:#f1f5f9;color:#475569;border-radius:999px;">501(c)({{ org.subsection_code }})</span>
-            {% endif %}
-          </div>
+  {% if results %}
+  <p style="font-size:.8rem;color:var(--t3);margin-bottom:.75rem">
+    {{ results | length }} result{{ 's' if results | length != 1 }}
+    for <strong style="color:var(--t2)">"{{ query }}"</strong>
+  </p>
+  <div class="c-card">
+    {% for org in results %}
+    <a href="/org/{{ org.ein }}" class="result-row">
+      <div>
+        <div class="result-name">{{ org.name }}</div>
+        <div class="result-meta">
+          <span>EIN {{ org.ein[:2] }}-{{ org.ein[2:] }}</span>
+          {% if org.city and org.state %}<span>{{ org.city }}, {{ org.state }}</span>{% endif %}
+          {% if org.ntee_code %}<span>NTEE {{ org.ntee_code }}</span>{% endif %}
+          {% if org.subsection_code == "3" %}
+            <span class="rtag rtag-green">501(c)(3)</span>
+          {% elif org.subsection_code %}
+            <span class="rtag rtag-gray">501(c)({{ org.subsection_code }})</span>
+          {% endif %}
         </div>
-        <div style="color:#4f46e5;font-size:1.1rem;margin-left:1rem;">&#8594;</div>
-      </a>
-      {% endfor %}
-    </div>
-    {% if results | length == 100 %}
-    <p class="text-muted small mt-2 text-center">Showing first 100 — try a more specific name.</p>
-    {% endif %}
-
-    {% else %}
-    <div class="section-card section-card-body text-center py-5">
-      <div style="font-size:2.5rem;margin-bottom:0.75rem;">🔍</div>
-      <div class="fw-semibold mb-1">No results for "{{ query }}"</div>
-      <div class="text-muted small">Try a shorter name, check spelling, or enter an EIN directly.</div>
-    </div>
-    {% endif %}
-
+      </div>
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 20 20" fill="currentColor" style="color:var(--t3);flex-shrink:0">
+        <path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd"/>
+      </svg>
+    </a>
+    {% endfor %}
   </div>
+  {% if results | length == 100 %}
+  <p style="font-size:.75rem;color:var(--t3);margin-top:.5rem;text-align:center">
+    Showing first 100 results — try a more specific name.
+  </p>
+  {% endif %}
+
+  {% else %}
+  <div class="c-card c-body" style="text-align:center;padding:3rem">
+    <div style="font-size:1.75rem;margin-bottom:.5rem">—</div>
+    <div style="font-weight:600;color:var(--t1);margin-bottom:.25rem">No results for "{{ query }}"</div>
+    <div style="font-size:.875rem;color:var(--t3)">Try a shorter name, check spelling, or enter an EIN directly.</div>
+  </div>
+  {% endif %}
+
 </div>
 {% endblock %}

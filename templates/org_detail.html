@@ -1,289 +1,270 @@
 {% extends "base.html" %}
 {% block title %}{{ org.name }} — 990 Health{% endblock %}
 
-{% set circ = 326.73 %}
-
-{% block hero %}
-<div class="org-hero">
-  <div class="container-xl px-3 px-md-4">
-    <a href="/" class="btn btn-sm btn-back mb-3">&#8592; Back</a>
-    <div class="d-flex align-items-center justify-content-between gap-4 flex-wrap">
-      <div>
-        <h1 class="org-name">{{ org.name }}</h1>
-        <div class="org-meta">
-          EIN&nbsp;{{ org.ein[:2] }}-{{ org.ein[2:] }}
-          {% if org.city %}&nbsp;&bull;&nbsp;{{ org.city }}, {{ org.state }}{% endif %}
-          {% if org.ntee_code %}&nbsp;&bull;&nbsp;NTEE {{ org.ntee_code }}{% endif %}
-        </div>
-      </div>
-      {% if score is not none %}
-      <div class="score-circle-wrap">
-        <svg width="140" height="140" viewBox="0 0 140 140" class="score-svg">
-          <circle cx="70" cy="70" r="52" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="10"/>
-          <circle cx="70" cy="70" r="52" fill="none" stroke="{{ color_hex }}" stroke-width="10"
-            stroke-dasharray="{{ (score / 100 * circ) | round(1) }} {{ circ }}"
-            stroke-linecap="round"
-            transform="rotate(-90 70 70)"/>
-          <text x="70" y="64" text-anchor="middle" dominant-baseline="middle"
-            font-size="38" font-weight="800" fill="white" font-family="Inter, sans-serif">{{ letter }}</text>
-          <text x="70" y="90" text-anchor="middle" dominant-baseline="middle"
-            font-size="13" fill="rgba(255,255,255,0.65)" font-family="Inter, sans-serif">{{ score }}/100</text>
-        </svg>
-      </div>
-      {% endif %}
-    </div>
-  </div>
-</div>
-{% endblock %}
-
 {% block content %}
-{% if not metrics %}
-<div class="alert alert-warning rounded-3 border-0 shadow-sm">
-  No structured 990 data found for this organization.
-</div>
-{% else %}
+<div class="org-wrap">
 
-<!-- Summary & signals -->
-{% if summary or signals %}
-<div class="summary-card mb-4">
-  {% if summary %}
-  <div class="summary-body">
-    <div class="summary-icon">💡</div>
-    <div>
-      <div class="summary-heading">Plain-Language Summary</div>
-      <p class="summary-text">{{ summary }}</p>
+  <a href="/" class="back-link">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clip-rule="evenodd"/>
+    </svg>
+    Back to search
+  </a>
+
+  <!-- Org header -->
+  <div class="org-header">
+    <div class="org-header-left">
+      <h1 class="org-name">{{ org.name }}</h1>
+      <div class="org-meta">
+        {% if org.ein %}<span>EIN {{ org.ein[:2] }}-{{ org.ein[2:] }}</span>{% endif %}
+        {% if org.city and org.state %}
+          <span class="meta-sep">·</span><span>{{ org.city }}, {{ org.state }}</span>
+        {% endif %}
+        {% if org.ntee_code %}
+          <span class="meta-sep">·</span><span>NTEE {{ org.ntee_code }}</span>
+        {% endif %}
+        {% if org.subsection_code == "3" %}
+          <span class="meta-sep">·</span>
+          <span class="meta-tag meta-tag-green">501(c)(3)</span>
+        {% elif org.subsection_code %}
+          <span class="meta-sep">·</span>
+          <span class="meta-tag meta-tag-gray">501(c)({{ org.subsection_code }})</span>
+        {% endif %}
+      </div>
     </div>
-  </div>
-  {% endif %}
-
-  {% if signals %}
-  <div class="signals-list {% if summary %}signals-list--bordered{% endif %}">
-    <div class="signals-heading">Key Signals</div>
-    {% for level, msg in signals %}
-    <div class="signal-item signal-{{ level }}">
-      <span class="signal-dot"></span>
-      {{ msg }}
+    {% if score is not none %}
+    <div class="score-badge grade-{{ color }}">
+      <div class="score-letter">{{ letter }}</div>
+      <div class="score-num">{{ score }}/100</div>
     </div>
-    {% endfor %}
+    {% endif %}
   </div>
-  {% endif %}
-</div>
-{% endif %}
 
-<!-- Score breakdown -->
-{% set breakdown_descs = {
-  "Program Expense Ratio": "What share of total spending actually reaches programs and services (not admin or fundraising).",
-  "Operating Reserves":    "How many months the org could keep running if all donations stopped tomorrow.",
-  "Surplus Margin":        "Whether the org is bringing in more than it spends — a positive margin builds resilience.",
-  "Revenue Trend":         "Whether the organization's income is growing, flat, or shrinking year over year.",
-  "Liability Ratio":       "How much of what the org owns is funded by debt vs. its own resources."
-} %}
-<div class="section-card mb-4">
-  <div class="section-card-header">Score Breakdown <span class="text-muted fw-normal">(most recent year)</span></div>
-  <div class="section-card-body">
-    <div class="row g-3">
-      {% for label, pts, max_pts, note in breakdown %}
-      {% set pct = (pts / max_pts * 100) | int %}
-      {% if pct >= 75 %}{% set bar_color = "#059669" %}
-      {% elif pct >= 40 %}{% set bar_color = "#d97706" %}
-      {% else %}{% set bar_color = "#dc2626" %}{% endif %}
-      <div class="col-md-6">
-        <div class="breakdown-item">
-          <div class="d-flex justify-content-between align-items-baseline mb-1">
-            <span class="breakdown-label">{{ label }}</span>
-            <span class="breakdown-score">{{ pts }}<span class="text-muted">/{{ max_pts }}</span></span>
-          </div>
-          <div class="breakdown-bar-track">
-            <div class="breakdown-bar-fill" style="width:{{ pct }}%; background:{{ bar_color }}"></div>
-          </div>
-          <div class="breakdown-note">{{ note }}</div>
-          {% if label in breakdown_descs %}
-          <div class="breakdown-desc">{{ breakdown_descs[label] }}</div>
-          {% endif %}
-        </div>
+  {% if not metrics %}
+  <div class="c-card c-body" style="color:var(--t2)">
+    No structured 990 data found for this organization.
+  </div>
+
+  {% else %}
+
+  <!-- Summary + signals -->
+  {% if summary or signals %}
+  <div class="c-card" style="margin-bottom:.75rem">
+    {% if summary %}
+    <div class="summary-text">{{ summary }}</div>
+    {% endif %}
+    {% if signals %}
+    <div class="signals-section {% if summary %}signals-bordered{% endif %}">
+      <div class="signals-lbl">Key signals</div>
+      {% for level, msg in signals %}
+      <div class="signal">
+        <span class="sig-dot sig-{{ level }}"></span>
+        {{ msg }}
       </div>
       {% endfor %}
     </div>
+    {% endif %}
   </div>
-</div>
+  {% endif %}
 
-<!-- KPI tiles -->
-{% if latest %}
-{% macro kpi(label, val, desc, prefix="$", suffix="", good_if="positive") %}
-{% if val is not none %}
-  {% if good_if == "positive" %}{% set klass = "good" if val >= 0 else "bad" %}
-  {% elif good_if == "high" %}{% set klass = "good" if val >= 75 else ("ok" if val >= 50 else "bad") %}
-  {% elif good_if == "low" %}{% set klass = "good" if val <= 33 else ("ok" if val <= 60 else "bad") %}
-  {% elif good_if == "reserves" %}{% set klass = "good" if val >= 3 else ("ok" if val >= 1 else "bad") %}
-  {% else %}{% set klass = "neutral" %}{% endif %}
-{% else %}{% set klass = "neutral" %}{% endif %}
-<div class="col-6 col-md-3">
-  <div class="kpi-card {{ klass }}">
+  <!-- Score breakdown -->
+  {% set defs = {
+    "Program Expense Ratio": "What share of spending goes to programs vs. admin and fundraising.",
+    "Operating Reserves":    "How many months the org could operate if all income stopped.",
+    "Surplus Margin":        "Whether the org spent more or less than it raised.",
+    "Revenue Trend":         "Is income growing, flat, or declining year over year?",
+    "Liability Ratio":       "How much of what it owns is funded by debt — lower is safer."
+  } %}
+  <div class="c-card" style="margin-bottom:.75rem">
+    <div class="c-head">
+      Health Score Breakdown
+      <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--t3)">— most recent year</span>
+    </div>
+    <div class="c-body">
+      <div class="row g-3">
+        {% for label, pts, max_pts, note in breakdown %}
+        {% set pct = (pts / max_pts * 100) | int %}
+        {% if pct >= 75 %}{% set fc = "var(--green)" %}
+        {% elif pct >= 40 %}{% set fc = "var(--amber)" %}
+        {% else %}{% set fc = "var(--red)" %}{% endif %}
+        <div class="col-md-6">
+          <div class="bd-item">
+            <div class="bd-row">
+              <span class="bd-label">{{ label }}</span>
+              <span class="bd-score">{{ pts }}<span>/{{ max_pts }}</span></span>
+            </div>
+            <div class="bd-track"><div class="bd-fill" style="width:{{ pct }}%;background:{{ fc }}"></div></div>
+            <div class="bd-note">{{ note }}</div>
+            {% if label in defs %}<div class="bd-def">{{ defs[label] }}</div>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI tiles -->
+  {% if latest %}
+  {% macro kpi(label, val, desc, prefix="$", suffix="", good="") %}
+  {% if val is not none %}
+    {% if   good == "pos" %}{% set vc = "good" if val > 0 else ("bad" if val < 0 else "") %}
+    {% elif good == "hi"  %}{% set vc = "good" if val >= 75 else ("bad" if val < 50 else "") %}
+    {% elif good == "lo"  %}{% set vc = "good" if val < 30 else ("bad" if val > 60 else "") %}
+    {% elif good == "res" %}{% set vc = "good" if val >= 3 else ("bad" if val < 1 else "") %}
+    {% else %}{% set vc = "" %}{% endif %}
+  {% else %}{% set vc = "" %}{% endif %}
+  <div class="kpi">
     <div class="kpi-label">{{ label }}</div>
-    <div class="kpi-value">
+    <div class="kpi-val {{ vc }}">
       {% if val is not none %}{{ prefix }}{{ "{:,.0f}".format(val) }}{{ suffix }}{% else %}—{% endif %}
     </div>
     <div class="kpi-desc">{{ desc }}</div>
   </div>
-</div>
-{% endmacro %}
+  {% endmacro %}
 
-<div class="row g-3 mb-4">
-  {{ kpi("Total Revenue",        latest.total_revenue,         "All income: donations, grants, services",             good_if="neutral") }}
-  {{ kpi("Total Expenses",       latest.total_expenses,        "All money spent running the organization",            good_if="neutral") }}
-  {{ kpi("Net Assets",           latest.net_assets,            "What it owns minus what it owes (like net worth)",    good_if="positive") }}
-  {{ kpi("Net Surplus",          latest.net_surplus,           "Revenue minus expenses — positive means growing",     good_if="positive") }}
-  {{ kpi("Program Exp. Ratio",   latest.program_expense_ratio, "% of spending that reaches the mission — 75%+ is healthy", prefix="", suffix="%", good_if="high") }}
-  {{ kpi("Surplus Margin",       latest.surplus_margin,        "% difference between income and spending",            prefix="", suffix="%", good_if="positive") }}
-  {{ kpi("Months of Reserves",   latest.months_of_reserves,    "How long it could operate if all funding stopped — 3–6 mo is healthy", prefix="", suffix=" mo", good_if="reserves") }}
-  {{ kpi("Liabilities / Assets", latest.liabilities_to_assets, "% of assets that are borrowed — lower is better",    prefix="", suffix="%", good_if="low") }}
-</div>
-{% endif %}
+  <div class="kpi-grid" style="margin-bottom:.75rem">
+    {{ kpi("Total Revenue",         latest.total_revenue,         "All income: donations, grants, services") }}
+    {{ kpi("Total Expenses",        latest.total_expenses,        "All spending to run the organization") }}
+    {{ kpi("Net Assets",            latest.net_assets,            "What it owns minus what it owes",                  good="pos") }}
+    {{ kpi("Net Surplus",           latest.net_surplus,           "Revenue minus expenses this year",                 good="pos") }}
+    {{ kpi("Program Expense Ratio", latest.program_expense_ratio, "% to programs — 75%+ is the standard",  prefix="", suffix="%", good="hi") }}
+    {{ kpi("Surplus Margin",        latest.surplus_margin,        "% difference between income and spending", prefix="", suffix="%", good="pos") }}
+    {{ kpi("Months of Reserves",    latest.months_of_reserves,    "Runway if all funding stopped — 3–6 mo is healthy", prefix="", suffix=" mo", good="res") }}
+    {{ kpi("Liabilities / Assets",  latest.liabilities_to_assets, "% of assets that are borrowed",          prefix="", suffix="%", good="lo") }}
+  </div>
+  {% endif %}
 
-<!-- Charts -->
-<div class="row g-4 mb-4">
-  <div class="col-md-6">
-    <div class="section-card h-100">
-      <div class="section-card-header">Revenue vs Expenses</div>
-      <div class="section-card-body"><canvas id="revExpChart"></canvas></div>
+  <!-- Charts -->
+  <div class="chart-row" style="margin-bottom:.75rem">
+    <div class="c-card">
+      <div class="c-head">Revenue vs Expenses</div>
+      <div class="c-body"><canvas id="revExpChart" height="220"></canvas></div>
+    </div>
+    <div class="c-card">
+      <div class="c-head">Net Assets Over Time</div>
+      <div class="c-body"><canvas id="netAssetsChart" height="220"></canvas></div>
     </div>
   </div>
-  <div class="col-md-6">
-    <div class="section-card h-100">
-      <div class="section-card-header">Net Assets Over Time</div>
-      <div class="section-card-body"><canvas id="netAssetsChart"></canvas></div>
+  <div class="c-card" style="margin-bottom:.75rem">
+    <div class="c-head">Expense Breakdown by Year</div>
+    <div class="c-body"><canvas id="expChart" height="180"></canvas></div>
+  </div>
+
+  <!-- Table -->
+  <div class="c-card">
+    <div class="c-head">Year-by-Year Detail</div>
+    <div class="table-responsive">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Year</th>
+            <th class="t-r">Revenue</th>
+            <th class="t-r">Expenses</th>
+            <th class="t-r">Net Surplus</th>
+            <th class="t-r">Net Assets</th>
+            <th class="t-r">Prog. %</th>
+            <th class="t-r">Reserves</th>
+            <th class="t-r">Margin</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in metrics | reverse %}
+          <tr>
+            <td class="t-bold">{{ m.year }}</td>
+            <td class="t-r">${{ "{:,.0f}".format(m.total_revenue) }}</td>
+            <td class="t-r">${{ "{:,.0f}".format(m.total_expenses) }}</td>
+            <td class="t-r {{ 't-good' if m.net_surplus > 0 else ('t-bad' if m.net_surplus < 0 else '') }}">
+              ${{ "{:,.0f}".format(m.net_surplus) }}
+            </td>
+            <td class="t-r">${{ "{:,.0f}".format(m.net_assets) }}</td>
+            <td class="t-r">{{ m.program_expense_ratio ~ "%" if m.program_expense_ratio is not none else "—" }}</td>
+            <td class="t-r">{{ m.months_of_reserves ~ " mo" if m.months_of_reserves is not none else "—" }}</td>
+            <td class="t-r {{ 't-good' if m.surplus_margin and m.surplus_margin > 0 else ('t-bad' if m.surplus_margin and m.surplus_margin < 0 else '') }}">
+              {{ m.surplus_margin ~ "%" if m.surplus_margin is not none else "—" }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
-  <div class="col-12">
-    <div class="section-card">
-      <div class="section-card-header">Expense Breakdown by Year</div>
-      <div class="section-card-body"><canvas id="expBreakdownChart" style="max-height:260px"></canvas></div>
-    </div>
-  </div>
-</div>
 
-<!-- Year-by-year table -->
-<div class="section-card mb-4">
-  <div class="section-card-header">Year-by-Year Detail</div>
-  <div class="table-responsive">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Year</th>
-          <th class="text-end">Revenue</th>
-          <th class="text-end">Expenses</th>
-          <th class="text-end">Net Surplus</th>
-          <th class="text-end">Net Assets</th>
-          <th class="text-end">Prog. Exp %</th>
-          <th class="text-end">Reserves (mo)</th>
-          <th class="text-end">Surplus Margin</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for m in metrics | reverse %}
-        <tr>
-          <td class="fw-semibold">{{ m.year }}</td>
-          <td class="text-end">${{ "{:,.0f}".format(m.total_revenue) }}</td>
-          <td class="text-end">${{ "{:,.0f}".format(m.total_expenses) }}</td>
-          <td class="text-end {{ 'val-good' if m.net_surplus >= 0 else 'val-bad' }}">
-            ${{ "{:,.0f}".format(m.net_surplus) }}
-          </td>
-          <td class="text-end">${{ "{:,.0f}".format(m.net_assets) }}</td>
-          <td class="text-end">{{ m.program_expense_ratio ~ "%" if m.program_expense_ratio is not none else "—" }}</td>
-          <td class="text-end">{{ m.months_of_reserves if m.months_of_reserves is not none else "—" }}</td>
-          <td class="text-end {{ 'val-good' if m.surplus_margin and m.surplus_margin >= 0 else ('val-bad' if m.surplus_margin else '') }}">
-            {{ m.surplus_margin ~ "%" if m.surplus_margin is not none else "—" }}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+  {% endif %}
 </div>
-
-{% endif %}
 {% endblock %}
 
 {% block scripts %}
 <script>
 Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
-Chart.defaults.font.size = 12;
-Chart.defaults.color = '#64748b';
+Chart.defaults.font.size = 11;
+Chart.defaults.color = '#94a3b8';
 Chart.defaults.plugins.legend.position = 'bottom';
-Chart.defaults.plugins.legend.labels.boxWidth = 12;
-Chart.defaults.plugins.legend.labels.padding = 16;
+Chart.defaults.plugins.legend.labels.boxWidth = 9;
+Chart.defaults.plugins.legend.labels.padding = 14;
+Chart.defaults.plugins.legend.labels.usePointStyle = true;
 
-const YEARS    = {{ years | tojson }};
-const REVENUES = {{ revenues | tojson }};
-const EXPENSES = {{ expenses | tojson }};
-const NET_ASSETS = {{ net_assets | tojson }};
-const PROG_EXP   = {{ prog_exp | tojson }};
-const MGMT_EXP   = {{ mgmt_exp | tojson }};
-const FUND_EXP   = {{ fund_exp | tojson }};
+const YEARS     = {{ years     | tojson }};
+const REVENUES  = {{ revenues  | tojson }};
+const EXPENSES  = {{ expenses  | tojson }};
+const NET_ASSETS= {{ net_assets| tojson }};
+const PROG_EXP  = {{ prog_exp  | tojson }};
+const MGMT_EXP  = {{ mgmt_exp  | tojson }};
+const FUND_EXP  = {{ fund_exp  | tojson }};
 
-const millions = v => v == null ? null : '$' + (v / 1e6).toFixed(1) + 'M';
-const dollars  = v => v == null ? null : '$' + Number(v).toLocaleString();
+const fmtM = v => v == null ? null : '$' + (v/1e6).toFixed(1) + 'M';
+const fmtN = v => v == null ? null : '$' + Number(v).toLocaleString();
 
-const gridColor = 'rgba(0,0,0,0.05)';
-const baseScales = {
-  y: { grid: { color: gridColor }, ticks: { callback: millions } },
-  x: { grid: { display: false } },
+const ax = {
+  x: { grid: { display:false }, border: { display:false } },
+  y: { grid: { color:'#f1f5f9' }, border: { display:false }, ticks: { callback: fmtM } }
 };
 
-// Revenue vs Expenses
 new Chart(document.getElementById('revExpChart'), {
   type: 'bar',
   data: {
     labels: YEARS,
     datasets: [
-      { label: 'Revenue',  data: REVENUES, backgroundColor: '#818cf8', borderRadius: 4 },
-      { label: 'Expenses', data: EXPENSES, backgroundColor: '#fb7185', borderRadius: 4 },
+      { label:'Revenue',  data:REVENUES, backgroundColor:'#818cf8', borderRadius:3, borderSkipped:false },
+      { label:'Expenses', data:EXPENSES, backgroundColor:'#fda4af', borderRadius:3, borderSkipped:false },
     ]
   },
   options: {
-    plugins: { tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + dollars(ctx.raw) } } },
-    scales: baseScales,
+    plugins: { tooltip: { callbacks: { label: c => c.dataset.label+': '+fmtN(c.raw) } } },
+    scales: ax,
   }
 });
 
-// Net Assets
 new Chart(document.getElementById('netAssetsChart'), {
   type: 'line',
   data: {
     labels: YEARS,
     datasets: [{
-      label: 'Net Assets',
-      data: NET_ASSETS,
-      borderColor: '#34d399',
-      backgroundColor: 'rgba(52,211,153,0.12)',
-      fill: true,
-      tension: 0.35,
-      pointBackgroundColor: '#34d399',
-      pointRadius: 4,
+      label:'Net Assets', data:NET_ASSETS,
+      borderColor:'#10b981', backgroundColor:'rgba(16,185,129,.08)',
+      fill:true, tension:.4, pointRadius:3, pointBackgroundColor:'#10b981',
     }]
   },
   options: {
-    plugins: { tooltip: { callbacks: { label: ctx => dollars(ctx.raw) } } },
-    scales: baseScales,
+    plugins: { tooltip: { callbacks: { label: c => fmtN(c.raw) } } },
+    scales: ax,
   }
 });
 
-// Expense breakdown — stacked bar
-new Chart(document.getElementById('expBreakdownChart'), {
+new Chart(document.getElementById('expChart'), {
   type: 'bar',
   data: {
     labels: YEARS,
     datasets: [
-      { label: 'Programs',    data: PROG_EXP, backgroundColor: '#60a5fa', borderRadius: { topLeft: 0, topRight: 0 } },
-      { label: 'Mgmt/General', data: MGMT_EXP, backgroundColor: '#fbbf24' },
-      { label: 'Fundraising', data: FUND_EXP, backgroundColor: '#c084fc', borderRadius: { topLeft: 4, topRight: 4 } },
+      { label:'Programs',     data:PROG_EXP, backgroundColor:'#6366f1' },
+      { label:'Mgmt/General', data:MGMT_EXP, backgroundColor:'#fbbf24' },
+      { label:'Fundraising',  data:FUND_EXP, backgroundColor:'#c084fc' },
     ]
   },
   options: {
-    plugins: { tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + dollars(ctx.raw) } } },
+    plugins: { tooltip: { callbacks: { label: c => c.dataset.label+': '+fmtN(c.raw) } } },
     scales: {
-      x: { stacked: true, grid: { display: false } },
-      y: { stacked: true, grid: { color: gridColor }, ticks: { callback: millions } },
+      x: { ...ax.x, stacked:true },
+      y: { ...ax.y, stacked:true },
     }
   }
 });
